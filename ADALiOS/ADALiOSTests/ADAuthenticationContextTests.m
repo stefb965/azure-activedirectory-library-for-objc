@@ -683,7 +683,7 @@ const int sAsyncContextTimeout = 10;
 
 -(void) testAcquireTokenSilent
 {
-    ADAuthenticationError* error;
+    ADAuthenticationError* error = nil;
     mSilent = YES;
     
     //Nothing in the cache, as we cannot prompt for credentials, this should fail:
@@ -949,9 +949,6 @@ const int sAsyncContextTimeout = 10;
     NSUUID* second = [NSUUID UUID];
     mContext.correlationId = second;
     XCTAssertEqual(mContext.correlationId, second);
-    
-    mContext.correlationId = nil;
-    XCTAssertNil(mContext.correlationId);
 }
 
 -(void) testCorrelationIdRefreshToken
@@ -1072,7 +1069,7 @@ const int sAsyncContextTimeout = 10;
 
 -(void) testUIError
 {
-    ADAuthenticationError* error;
+    ADAuthenticationError* error = nil;
     
     //Nothing in the cache, UI is needed:
     [mDefaultTokenCache removeAllWithError:&error];

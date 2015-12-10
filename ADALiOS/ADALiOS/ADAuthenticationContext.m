@@ -531,7 +531,6 @@ return; \
                  }//broad item
              }//key
          }//!item.multiResourceRefreshToken
-         
          //The refresh token attempt failed and no other suitable refresh token found
          //call acquireToken
          [self requestTokenWithResource: resource
@@ -1693,7 +1692,7 @@ additionalHeaders:nil
 {
     if ( !OSAtomicCompareAndSwapInt( 1, 0, &sDialogInProgress) )
     {
-        AD_LOG_WARN(@"UI Locking", @"The UI lock has already been released.")
+        AD_LOG_WARN(@"UI Locking", @"The UI lock has already been released.");
     }
 }
 
@@ -2159,7 +2158,7 @@ additionalHeaders:(NSDictionary *)additionalHeaders
         [headerKeyValuePair setValue:[pair objectAtIndex:1] forKey:[[pair objectAtIndex:0] adTrimmedString]];
     }
     
-    NSString* authHeader = [ADPkeyAuthHelper createDeviceAuthResponse:authorizationServer challengeData:headerKeyValuePair challengeType:AD_THUMBPRINT];
+    NSString* authHeader = [ADPkeyAuthHelper createDeviceAuthResponse:authorizationServer challengeData:headerKeyValuePair];
     [headerKeyValuePair removeAllObjects];
     [headerKeyValuePair setObject:authHeader forKey:@"Authorization"];
     
@@ -2173,18 +2172,19 @@ additionalHeaders:headerKeyValuePair
 
 
 
-+(BOOL) isResponseFromBroker:(NSString*) sourceApplication
-                    response:(NSURL*) response
++ (BOOL)isResponseFromBroker:(NSString*)sourceApplication
+                    response:(NSURL*)response
 {
     return response && [NSString adSame:sourceApplication toString:brokerAppIdentifier];
 }
 
 
-+(void) handleBrokerResponse:(NSURL*) response
++ (void)handleBrokerResponse:(NSURL*) response
 {
     ADAuthenticationCallback completionBlock = [ADBrokerNotificationManager sharedInstance].callbackForBroker;
     if (!completionBlock)
     {
+        AD_LOG_WARN(@"Received broker response, but no completion block.", nil);
         return;
     }
     
@@ -2207,16 +2207,18 @@ additionalHeaders:headerKeyValuePair
         
         //decrypt response first
         ADBrokerKeyHelper* brokerHelper = [[ADBrokerKeyHelper alloc] initHelper];
-        ADAuthenticationError* error;
+        ADAuthenticationError* error = nil;
         NSData *encryptedResponse = [NSString Base64DecodeData:encryptedBase64Response ];
         NSData* decrypted = [brokerHelper decryptBrokerResponse:encryptedResponse error:&error];
         NSString* decryptedString = nil;
         
         if(!error)
         {
-            decryptedString =[[NSString alloc] initWithData:decrypted encoding:NSASCIIStringEncoding];
+            decryptedString = [[NSString alloc] initWithData:decrypted encoding:NSUTF8StringEncoding];
             //now compute the hash on the unencrypted data
-            if([NSString adSame:hash toString:[ADPkeyAuthHelper computeThumbprint:decrypted isSha2:YES]]){
+            AD_LOG_INFO_F(@"Received broker reponse", @"reponse = %@", decrypted);
+            if([NSString adSame:hash toString:[ADPkeyAuthHelper computeThumbprint:decrypted isSha2:YES]])
+            {
                 //create response from the decrypted payload
                 queryParamsMap = [NSDictionary adURLFormDecode:decryptedString];
                 [ADHelpers removeNullStringFrom:queryParamsMap];
